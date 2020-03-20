@@ -12,6 +12,12 @@ error_reporting(E_ALL);
 if (!isset($_SESSION['PHPSESSID'])) {
     session_start();
 }
+if ((isset($_COOKIE['username'])) && ($_SESSION['username'] != $_COOKIE['username'])){
+    session_destroy();
+    setcookie('username', '', time() - 3600);
+    header('Location: /');
+}
+
 
 if (isset($_SESSION['username'])) {
     // user interface
@@ -66,11 +72,20 @@ function login($data)
     $user = new User;
     $user->storeValues($user->getAllByEmail($email));
     if (isset($user->id)) {
-        if ($pass == $user->password) {
-            $_SESSION['username'] = $user->name;
-            header('Location: /');
+        if (!$user->blocked) {
+            if ($pass == $user->password) {
+                if (isset($data['remember-me'])) {
+                    setcookie('username', $user->name, time() + (10 * 365 * 24 * 60 * 60));
+                } else {
+                    setcookie('username', $user->name, time() + (60 * 60));
+                }
+                $_SESSION['username'] = $user->name;
+                header('Location: /');
+            } else {
+                $errors[0] = 'Incorrect password';
+            }
         } else {
-            $errors[0] = 'Incorrect password';
+            $errors[0] = 'Account blocked';
         }
     } else {
         $errors[0] = 'Email not registered';
