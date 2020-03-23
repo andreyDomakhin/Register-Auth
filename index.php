@@ -52,6 +52,7 @@ function register($data)
             $user = new User;
             $user->storeValues($user->getAllByEmail($email));
             if (!isset($user->email)) {
+                $data['pass'] = password_hash($data['pass'], PASSWORD_ARGON2I, ['cost' => 10]);
                 $user->addUser($data);
             } else {
                 $errors[0] = 'This email is already registered';
@@ -73,7 +74,7 @@ function login($data)
     $user->storeValues($user->getAllByEmail($email));
     if (isset($user->id)) {
         if (!$user->blocked) {
-            if ($pass == $user->password) {
+            if (password_verify($pass, $user->password)) {
                 if (isset($data['remember-me'])) {
                     setcookie('username', $user->name, time() + (10 * 365 * 24 * 60 * 60));
                 } else {
